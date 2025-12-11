@@ -11,11 +11,12 @@ import { useCommandDialog } from "@tui/component/dialog-command"
 import { useTerminalDimensions } from "@opentui/solid"
 import { Locale } from "@/util/locale"
 import type { PromptInfo } from "./history"
+import { getLocalCommandList } from "./commands"
 
 export type AutocompleteRef = {
   onInput: (value: string) => void
   onKeyDown: (e: KeyEvent) => void
-  visible: false | "@" | "/"
+  visible: false | "@" | "/" | ":"
 }
 
 export type AutocompleteOption = {
@@ -355,9 +356,35 @@ export function Autocomplete(props: {
     }))
   })
 
+  const localCommands = createMemo((): AutocompleteOption[] => {
+    const localCmds = getLocalCommandList()
+    const results = localCmds.map((cmd) => ({
+      display: ":" + cmd.name,
+      description: cmd.description,
+      onSelect: () => {
+        const newText = ":" + cmd.name + " "
+        const cursor = props.input().logicalCursor
+        props.input().deleteRange(0, 0, cursor.row, cursor.col)
+        props.input().insertText(newText)
+        props.input().cursorOffset = Bun.stringWidth(newText)
+      },
+    }))
+
+    const max = firstBy(results, [(x) => x.display.length, "desc"])?.display.length
+    if (!max) return results
+    return results.map((item) => ({
+      ...item,
+      display: item.display.padEnd(max + 2),
+    }))
+  })
+
   const options = createMemo(() => {
     const mixed: AutocompleteOption[] = (
-      store.visible === "@" ? [...agents(), ...(files.loading ? files.latest || [] : files())] : [...commands()]
+      store.visible === "@"
+        ? [...agents(), ...(files.loading ? files.latest || [] : files())]
+        : store.visible === ":"
+          ? [...localCommands()]
+          : [...commands()]
     ).filter((x) => x.disabled !== true)
     const currentFilter = filter()
     if (!currentFilter) return mixed.slice(0, 10)
@@ -389,7 +416,7 @@ export function Autocomplete(props: {
     selected.onSelect?.()
   }
 
-  function show(mode: "@" | "/") {
+  function show(mode: "@" | "/" | ":") {
     command.keybinds(false)
     setStore({
       visible: mode,
@@ -399,7 +426,11 @@ export function Autocomplete(props: {
 
   function hide() {
     const text = props.input().plainText
-    if (store.visible === "/" && !text.endsWith(" ") && text.startsWith("/")) {
+    if (
+      (store.visible === "/" || store.visible === ":") &&
+      !text.endsWith(" ") &&
+      (text.startsWith("/") || text.startsWith(":"))
+    ) {
       const cursor = props.input().logicalCursor
       props.input().deleteRange(0, 0, cursor.row, cursor.col)
       // Sync the prompt store immediately since onContentChange is async
@@ -423,8 +454,8 @@ export function Autocomplete(props: {
             props.input().cursorOffset <= store.index ||
             // There is a space between the trigger and the cursor
             props.input().getTextRange(store.index, props.input().cursorOffset).match(/\s/) ||
-            // "/<command>" is not the sole content
-            (store.visible === "/" && value.match(/^\S+\s+\S+\s*$/))
+            // "/<command>" or ":<command>" is not the sole content
+            ((store.visible === "/" || store.visible === ":") && value.match(/^\S+\s+\S+\s*$/))
           ) {
             hide()
             return
@@ -470,6 +501,10 @@ export function Autocomplete(props: {
 
           if (e.name === "/") {
             if (props.input().cursorOffset === 0) show("/")
+          }
+
+          if (e.name === ":") {
+            if (props.input().cursorOffset === 0) show(":")
           }
         }
       },

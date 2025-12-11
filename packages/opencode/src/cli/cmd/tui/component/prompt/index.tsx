@@ -25,6 +25,7 @@ import { createColors, createFrames } from "../../ui/spinner.ts"
 import { useDialog } from "@tui/ui/dialog"
 import { DialogProvider as DialogProviderConnect } from "../dialog-provider"
 import { useToast } from "../../ui/toast"
+import { executeLocalCommand, LOCAL_COMMAND_PREFIX, type CommandContext } from "./commands"
 
 export type PromptProps = {
   sessionID?: string
@@ -415,6 +416,41 @@ export function Prompt(props: PromptProps) {
       exit()
       return
     }
+
+    // Check for local commands (prefix with :)
+    if (trimmed.startsWith(LOCAL_COMMAND_PREFIX)) {
+      const commandContext: CommandContext = {
+        input: trimmed,
+        args: [],
+        store: () => store,
+        setStore,
+        sdk,
+        sync,
+        local,
+        theme,
+        dialog,
+        toast,
+        route,
+        history: () => history.get().map((h) => h.input),
+        extmarks: {
+          clear: () => input.extmarks.clear(),
+        },
+      }
+
+      const result = await executeLocalCommand(trimmed, commandContext)
+
+      if (result.message) {
+        toast.show({
+          title: result.success ? "Success" : "Error",
+          description: result.message,
+        })
+      }
+
+      if (result.preventDefault) {
+        return
+      }
+    }
+
     const selectedModel = local.model.current()
     if (!selectedModel) {
       promptModelWarning()

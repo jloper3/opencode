@@ -102,6 +102,10 @@ export const { use: usePromptHistory, provider: PromptHistoryProvider } = create
 
         appendFile(historyFile.name!, JSON.stringify(entry) + "\n").catch(() => {})
       },
+      get() {
+        return store.history
+      },
+      store,
     }
   },
 })
