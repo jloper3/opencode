@@ -469,6 +469,7 @@ export namespace Config {
       input_newline: z.string().optional().default("shift+return,ctrl+j").describe("Insert newline in input"),
       history_previous: z.string().optional().default("up").describe("Previous history item"),
       history_next: z.string().optional().default("down").describe("Next history item"),
+      shell_toggle: z.string().optional().default("<leader>\\").describe("Toggle persistent shell mode"),
       session_child_cycle: z.string().optional().default("<leader>right").describe("Next child session"),
       session_child_cycle_reverse: z.string().optional().default("<leader>left").describe("Previous child session"),
       terminal_suspend: z.string().optional().default("ctrl+z").describe("Suspend terminal"),

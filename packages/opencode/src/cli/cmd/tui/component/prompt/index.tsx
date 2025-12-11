@@ -130,6 +130,17 @@ export function Prompt(props: PromptProps) {
         },
       },
       {
+        title: store.shellPersistent ? "Exit persistent shell" : "Enter persistent shell",
+        value: "shell.toggle",
+        category: "Shell",
+        keybind: "shell_toggle",
+        onSelect: async (dialog) => {
+          if (!input.focused) return
+          await togglePersistentShell()
+          dialog.clear()
+        },
+      },
+      {
         title: "Paste",
         value: "prompt.paste",
         disabled: true,
@@ -152,10 +163,16 @@ export function Prompt(props: PromptProps) {
         keybind: "session_interrupt",
         disabled: status().type === "idle",
         category: "Session",
-        onSelect: (dialog) => {
+        onSelect: async (dialog) => {
           if (autocomplete.visible) return
           if (!input.focused) return
-          // TODO: this should be its own command
+          // Handle persistent shell exit
+          if (store.shellPersistent) {
+            await exitPersistentShell()
+            dialog.clear()
+            return
+          }
+          // Handle one-off shell mode exit
           if (store.mode === "shell") {
             setStore("mode", "normal")
             return
@@ -276,6 +293,8 @@ export function Prompt(props: PromptProps) {
   const [store, setStore] = createStore<{
     prompt: PromptInfo
     mode: "normal" | "shell"
+    shellPersistent: boolean
+    ptyID: string | null
     extmarkToPartIndex: Map<number, number>
     interrupt: number
     placeholder: number
@@ -286,6 +305,8 @@ export function Prompt(props: PromptProps) {
       parts: [],
     },
     mode: "normal",
+    shellPersistent: false,
+    ptyID: null,
     extmarkToPartIndex: new Map(),
     interrupt: 0,
   })
@@ -406,9 +427,134 @@ export function Prompt(props: PromptProps) {
     },
   })
 
+  let ptyWebSocket: WebSocket | null = null
+
+  async function togglePersistentShell() {
+    if (store.shellPersistent) {
+      await exitPersistentShell()
+    } else {
+      await enterPersistentShell()
+    }
+  }
+
+  async function enterPersistentShell() {
+    try {
+      // Create a new PTY session
+      const result = await sdk.client.pty.create({
+        body: {
+          cwd: undefined, // will use instance directory
+          title: "Persistent Shell",
+        },
+      })
+
+      if (!result.data) {
+        toast.show({
+          variant: "error",
+          message: "Failed to create persistent shell",
+          duration: 3000,
+        })
+        return
+      }
+
+      const ptyID = result.data.id
+      setStore("ptyID", ptyID)
+      setStore("shellPersistent", true)
+      setStore("mode", "shell")
+
+      // Connect to PTY via WebSocket
+      const wsUrl = sdk.client.baseURL.replace(/^http/, "ws") + `/pty/${ptyID}/connect`
+      ptyWebSocket = new WebSocket(wsUrl)
+
+      ptyWebSocket.onopen = () => {
+        // Clear any existing input
+        input.clear()
+      }
+
+      ptyWebSocket.onmessage = (event) => {
+        // Handle ANSI output from PTY
+        // For now, we'll just append to input as raw text
+        // TODO: render ANSI properly in a separate output pane
+        const data = event.data as string
+        input.insertText(data)
+      }
+
+      ptyWebSocket.onerror = (error) => {
+        console.error("PTY WebSocket error:", error)
+        toast.show({
+          variant: "error",
+          message: "Persistent shell connection error",
+          duration: 3000,
+        })
+      }
+
+      ptyWebSocket.onclose = () => {
+        if (store.shellPersistent) {
+          // Unexpected close
+          exitPersistentShell()
+        }
+      }
+    } catch (error) {
+      console.error("Failed to enter persistent shell:", error)
+      toast.show({
+        variant: "error",
+        message: "Failed to create persistent shell",
+        duration: 3000,
+      })
+    }
+  }
+
+  async function exitPersistentShell() {
+    // Close websocket
+    if (ptyWebSocket) {
+      ptyWebSocket.close()
+      ptyWebSocket = null
+    }
+
+    // Remove PTY session
+    if (store.ptyID) {
+      try {
+        await sdk.client.pty.remove({
+          path: {
+            ptyID: store.ptyID,
+          },
+        })
+      } catch (error) {
+        console.error("Failed to remove PTY:", error)
+      }
+    }
+
+    // Reset state
+    setStore("shellPersistent", false)
+    setStore("ptyID", null)
+    setStore("mode", "normal")
+
+    // Clear input
+    input.clear()
+  }
+
+  // Cleanup on component unmount
+  onCleanup(() => {
+    if (store.shellPersistent) {
+      exitPersistentShell()
+    }
+  })
+
   async function submit() {
     if (props.disabled) return
     if (autocomplete.visible) return
+
+    // Handle persistent shell mode
+    if (store.shellPersistent && ptyWebSocket && ptyWebSocket.readyState === WebSocket.OPEN) {
+      const command = store.prompt.input + "\r" // Add carriage return for shell
+      ptyWebSocket.send(command)
+      input.clear()
+      setStore("prompt", {
+        input: "",
+        parts: [],
+      })
+      return
+    }
+
     if (!store.prompt.input) return
     const trimmed = store.prompt.input.trim()
     if (trimmed === "exit" || trimmed === "quit" || trimmed === ":q") {
@@ -596,7 +742,7 @@ export function Prompt(props: PromptProps) {
 
   const highlight = createMemo(() => {
     if (keybind.leader) return theme.border
-    if (store.mode === "shell") return theme.primary
+    if (store.shellPersistent || store.mode === "shell") return theme.primary
     return local.agent.color(local.agent.current().name)
   })
 
@@ -692,11 +838,22 @@ export function Prompt(props: PromptProps) {
                   await exit()
                   return
                 }
-                if (e.name === "!" && input.visualCursor.offset === 0) {
+                if (e.name === "!" && input.visualCursor.offset === 0 && !store.shellPersistent) {
                   setStore("mode", "shell")
                   e.preventDefault()
                   return
                 }
+                // Handle persistent shell exit
+                if (store.shellPersistent) {
+                  if ((e.name === "backspace" && input.visualCursor.offset === 0) || e.name === "escape") {
+                    exitPersistentShell()
+                    e.preventDefault()
+                    return
+                  }
+                  // In persistent mode, pass all other keys through to PTY
+                  return
+                }
+                // Handle one-off shell mode exit
                 if (store.mode === "shell") {
                   if ((e.name === "backspace" && input.visualCursor.offset === 0) || e.name === "escape") {
                     setStore("mode", "normal")
@@ -803,9 +960,13 @@ export function Prompt(props: PromptProps) {
             />
             <box flexDirection="row" flexShrink={0} paddingTop={1} gap={1}>
               <text fg={highlight()}>
-                {store.mode === "shell" ? "Shell" : Locale.titlecase(local.agent.current().name)}{" "}
+                {store.shellPersistent
+                  ? "Shell 🔒"
+                  : store.mode === "shell"
+                    ? "Shell"
+                    : Locale.titlecase(local.agent.current().name)}{" "}
               </text>
-              <Show when={store.mode === "normal"}>
+              <Show when={store.mode === "normal" && !store.shellPersistent}>
                 <box flexDirection="row" gap={1}>
                   <text flexShrink={0} fg={theme.text}>
                     {local.model.parsed().model}
@@ -902,6 +1063,11 @@ export function Prompt(props: PromptProps) {
           <Show when={status().type !== "retry"}>
             <box gap={2} flexDirection="row">
               <Switch>
+                <Match when={store.shellPersistent}>
+                  <text fg={theme.text}>
+                    esc <span style={{ fg: theme.textMuted }}>exit persistent shell</span>
+                  </text>
+                </Match>
                 <Match when={store.mode === "normal"}>
                   <text fg={theme.text}>
                     {keybind.print("agent_cycle")} <span style={{ fg: theme.textMuted }}>switch agent</span>
