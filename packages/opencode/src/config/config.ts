@@ -490,6 +490,7 @@ export namespace Config {
       .enum(["auto", "stacked"])
       .optional()
       .describe("Control diff rendering style: 'auto' adapts to terminal width, 'stacked' always shows single column"),
+    splash_title: z.string().optional().describe("Custom title text to display on the splash screen"),
   })
 
   export const Layout = z.enum(["auto", "stretch"]).meta({

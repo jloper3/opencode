@@ -65,6 +65,11 @@ export function Home() {
     <>
       <box flexGrow={1} justifyContent="center" alignItems="center" paddingLeft={2} paddingRight={2} gap={1}>
         <Logo />
+        <Show when={sync.data.config.tui?.splash_title}>
+          <box paddingTop={1}>
+            <text fg={theme.textMuted}>{sync.data.config.tui?.splash_title}</text>
+          </box>
+        </Show>
         <box width="100%" maxWidth={75} zIndex={1000} paddingTop={1}>
           <Prompt
             ref={(r) => {
