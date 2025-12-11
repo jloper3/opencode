@@ -279,6 +279,7 @@ function App() {
       value: "model.cycle_recent",
       keybind: "model_cycle_recent",
       category: "Agent",
+      suggested: false,
       onSelect: () => {
         local.model.cycle(1)
       },
@@ -289,6 +290,7 @@ function App() {
       value: "model.cycle_recent_reverse",
       keybind: "model_cycle_recent_reverse",
       category: "Agent",
+      suggested: false,
       onSelect: () => {
         local.model.cycle(-1)
       },
@@ -298,6 +300,7 @@ function App() {
       value: "agent.list",
       keybind: "agent_list",
       category: "Agent",
+      suggested: false,
       onSelect: () => {
         dialog.replace(() => <DialogAgent />)
       },
@@ -306,6 +309,7 @@ function App() {
       title: "Toggle MCPs",
       value: "mcp.list",
       category: "Agent",
+      suggested: false,
       onSelect: () => {
         dialog.replace(() => <DialogMcp />)
       },
@@ -316,6 +320,7 @@ function App() {
       keybind: "agent_cycle",
       category: "Agent",
       disabled: true,
+      suggested: false,
       onSelect: () => {
         local.agent.move(1)
       },
@@ -326,6 +331,7 @@ function App() {
       keybind: "agent_cycle_reverse",
       category: "Agent",
       disabled: true,
+      suggested: false,
       onSelect: () => {
         local.agent.move(-1)
       },
@@ -343,6 +349,7 @@ function App() {
       title: "View status",
       keybind: "status_view",
       value: "opencode.status",
+      suggested: false,
       onSelect: () => {
         dialog.replace(() => <DialogStatus />)
       },
@@ -351,6 +358,7 @@ function App() {
     {
       title: "Switch theme",
       value: "theme.switch",
+      suggested: false,
       onSelect: () => {
         dialog.replace(() => <DialogThemeList />)
       },
@@ -359,6 +367,7 @@ function App() {
     {
       title: "Toggle appearance",
       value: "theme.switch_mode",
+      suggested: false,
       onSelect: (dialog) => {
         setMode(mode() === "dark" ? "light" : "dark")
         dialog.clear()
@@ -368,6 +377,7 @@ function App() {
     {
       title: "Help",
       value: "help.show",
+      suggested: false,
       onSelect: () => {
         dialog.replace(() => <DialogHelp />)
       },
@@ -376,6 +386,7 @@ function App() {
     {
       title: "Open docs",
       value: "docs.open",
+      suggested: false,
       onSelect: () => {
         open("https://opencode.ai/docs").catch(() => {})
         dialog.clear()
@@ -385,6 +396,7 @@ function App() {
     {
       title: "Exit the app",
       value: "app.exit",
+      suggested: false,
       onSelect: () => exit(),
       category: "System",
     },
@@ -392,6 +404,7 @@ function App() {
       title: "Toggle debug panel",
       category: "System",
       value: "app.debug",
+      suggested: false,
       onSelect: (dialog) => {
         renderer.toggleDebugOverlay()
         dialog.clear()
@@ -401,6 +414,7 @@ function App() {
       title: "Toggle console",
       category: "System",
       value: "app.fps",
+      suggested: false,
       onSelect: (dialog) => {
         renderer.console.toggle()
         dialog.clear()
@@ -411,6 +425,7 @@ function App() {
       value: "terminal.suspend",
       keybind: "terminal_suspend",
       category: "System",
+      suggested: false,
       onSelect: () => {
         process.once("SIGCONT", () => {
           renderer.resume()
