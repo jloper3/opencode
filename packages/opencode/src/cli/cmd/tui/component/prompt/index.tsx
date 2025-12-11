@@ -111,6 +111,7 @@ export function Prompt(props: PromptProps) {
         value: "prompt.clear",
         category: "Prompt",
         disabled: true,
+        suggested: false,
         onSelect: (dialog) => {
           input.extmarks.clear()
           input.clear()
@@ -123,6 +124,7 @@ export function Prompt(props: PromptProps) {
         disabled: true,
         keybind: "input_submit",
         category: "Prompt",
+        suggested: false,
         onSelect: (dialog) => {
           if (!input.focused) return
           submit()
@@ -147,6 +149,7 @@ export function Prompt(props: PromptProps) {
         disabled: true,
         keybind: "input_paste",
         category: "Prompt",
+        suggested: false,
         onSelect: async () => {
           const content = await Clipboard.read()
           if (content?.mime.startsWith("image/")) {
@@ -164,6 +167,7 @@ export function Prompt(props: PromptProps) {
         keybind: "session_interrupt",
         disabled: status().type === "idle",
         category: "Session",
+        suggested: false,
         onSelect: async (dialog) => {
           if (autocomplete.visible) return
           if (!input.focused) return
@@ -200,6 +204,7 @@ export function Prompt(props: PromptProps) {
         category: "Session",
         keybind: "editor_open",
         value: "prompt.editor",
+        suggested: false,
         onSelect: async (dialog, trigger) => {
           dialog.clear()
 
