@@ -134,6 +134,7 @@ export function Prompt(props: PromptProps) {
         value: "shell.toggle",
         category: "Shell",
         keybind: "shell_toggle",
+        suggested: false,
         onSelect: async (dialog) => {
           if (!input.focused) return
           await togglePersistentShell()
