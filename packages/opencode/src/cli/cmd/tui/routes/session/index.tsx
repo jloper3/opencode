@@ -270,6 +270,7 @@ export function Session() {
       value: "session.rename",
       keybind: "session_rename",
       category: "Session",
+      suggested: false,
       onSelect: (dialog) => {
         dialog.replace(() => <DialogSessionRename session={route.sessionID} />)
       },
@@ -279,6 +280,7 @@ export function Session() {
       value: "session.timeline",
       keybind: "session_timeline",
       category: "Session",
+      suggested: false,
       onSelect: (dialog) => {
         dialog.replace(() => (
           <DialogTimeline
@@ -298,6 +300,7 @@ export function Session() {
       value: "session.compact",
       keybind: "session_compact",
       category: "Session",
+      suggested: false,
       onSelect: (dialog) => {
         const selectedModel = local.model.current()
         if (!selectedModel) {
@@ -322,6 +325,7 @@ export function Session() {
       keybind: "session_unshare",
       disabled: !session()?.share?.url,
       category: "Session",
+      suggested: false,
       onSelect: (dialog) => {
         sdk.client.session.unshare({
           sessionID: route.sessionID,
@@ -334,6 +338,7 @@ export function Session() {
       value: "session.undo",
       keybind: "messages_undo",
       category: "Session",
+      suggested: false,
       onSelect: async (dialog) => {
         const status = sync.data.session_status[route.sessionID]
         if (status?.type !== "idle") await sdk.client.session.abort({ sessionID: route.sessionID }).catch(() => {})
@@ -370,6 +375,7 @@ export function Session() {
       keybind: "messages_redo",
       disabled: !session()?.revert?.messageID,
       category: "Session",
+      suggested: false,
       onSelect: (dialog) => {
         dialog.clear()
         const messageID = session().revert?.messageID
@@ -393,6 +399,7 @@ export function Session() {
       value: "session.sidebar.toggle",
       keybind: "sidebar_toggle",
       category: "Session",
+      suggested: false,
       onSelect: (dialog) => {
         setSidebar((prev) => {
           if (prev === "auto") return sidebarVisible() ? "hide" : "show"
@@ -409,6 +416,7 @@ export function Session() {
       value: "session.username_visible.toggle",
       keybind: "username_toggle",
       category: "Session",
+      suggested: false,
       onSelect: (dialog) => {
         setUsernameVisible((prev) => {
           const next = !prev
@@ -423,6 +431,7 @@ export function Session() {
       value: "session.toggle.conceal",
       keybind: "messages_toggle_conceal" as any,
       category: "Session",
+      suggested: false,
       onSelect: (dialog) => {
         setConceal((prev) => !prev)
         dialog.clear()
@@ -432,6 +441,7 @@ export function Session() {
       title: showTimestamps() ? "Hide timestamps" : "Show timestamps",
       value: "session.toggle.timestamps",
       category: "Session",
+      suggested: false,
       onSelect: (dialog) => {
         setShowTimestamps((prev) => {
           const next = !prev
@@ -445,6 +455,7 @@ export function Session() {
       title: showThinking() ? "Hide thinking" : "Show thinking",
       value: "session.toggle.thinking",
       category: "Session",
+      suggested: false,
       onSelect: (dialog) => {
         setShowThinking((prev) => {
           const next = !prev
@@ -458,6 +469,7 @@ export function Session() {
       title: "Toggle diff wrapping",
       value: "session.toggle.diffwrap",
       category: "Session",
+      suggested: false,
       onSelect: (dialog) => {
         setDiffWrapMode((prev) => (prev === "word" ? "none" : "word"))
         dialog.clear()
@@ -468,6 +480,7 @@ export function Session() {
       value: "session.toggle.actions",
       keybind: "tool_details",
       category: "Session",
+      suggested: false,
       onSelect: (dialog) => {
         const newValue = !showDetails()
         setShowDetails(newValue)
@@ -480,6 +493,7 @@ export function Session() {
       value: "session.toggle.scrollbar",
       keybind: "scrollbar_toggle",
       category: "Session",
+      suggested: false,
       onSelect: (dialog) => {
         setShowScrollbar((prev) => {
           const next = !prev
@@ -495,6 +509,7 @@ export function Session() {
       keybind: "messages_page_up",
       category: "Session",
       disabled: true,
+      suggested: false,
       onSelect: (dialog) => {
         scroll.scrollBy(-scroll.height / 2)
         dialog.clear()
@@ -506,6 +521,7 @@ export function Session() {
       keybind: "messages_page_down",
       category: "Session",
       disabled: true,
+      suggested: false,
       onSelect: (dialog) => {
         scroll.scrollBy(scroll.height / 2)
         dialog.clear()
@@ -517,6 +533,7 @@ export function Session() {
       keybind: "messages_half_page_up",
       category: "Session",
       disabled: true,
+      suggested: false,
       onSelect: (dialog) => {
         scroll.scrollBy(-scroll.height / 4)
         dialog.clear()
@@ -528,6 +545,7 @@ export function Session() {
       keybind: "messages_half_page_down",
       category: "Session",
       disabled: true,
+      suggested: false,
       onSelect: (dialog) => {
         scroll.scrollBy(scroll.height / 4)
         dialog.clear()
@@ -539,6 +557,7 @@ export function Session() {
       keybind: "messages_first",
       category: "Session",
       disabled: true,
+      suggested: false,
       onSelect: (dialog) => {
         scroll.scrollTo(0)
         dialog.clear()
@@ -550,6 +569,7 @@ export function Session() {
       keybind: "messages_last",
       category: "Session",
       disabled: true,
+      suggested: false,
       onSelect: (dialog) => {
         scroll.scrollTo(scroll.scrollHeight)
         dialog.clear()
@@ -560,6 +580,7 @@ export function Session() {
       value: "session.messages_last_user",
       keybind: "messages_last_user",
       category: "Session",
+      suggested: false,
       onSelect: () => {
         const messages = sync.data.message[route.sessionID]
         if (!messages || !messages.length) return
@@ -591,6 +612,7 @@ export function Session() {
       value: "messages.copy",
       keybind: "messages_copy",
       category: "Session",
+      suggested: false,
       onSelect: (dialog) => {
         const lastAssistantMessage = messages().findLast((msg) => msg.role === "assistant")
         if (!lastAssistantMessage) {
@@ -636,6 +658,7 @@ export function Session() {
       value: "session.copy",
       keybind: "session_copy",
       category: "Session",
+      suggested: false,
       onSelect: async (dialog) => {
         try {
           // Format session transcript as markdown
@@ -678,6 +701,7 @@ export function Session() {
       value: "session.export",
       keybind: "session_export",
       category: "Session",
+      suggested: false,
       onSelect: async (dialog) => {
         try {
           // Format session transcript as markdown
@@ -741,6 +765,7 @@ export function Session() {
       keybind: "session_child_cycle",
       category: "Session",
       disabled: true,
+      suggested: false,
       onSelect: (dialog) => {
         moveChild(1)
         dialog.clear()
@@ -752,6 +777,7 @@ export function Session() {
       keybind: "session_child_cycle_reverse",
       category: "Session",
       disabled: true,
+      suggested: false,
       onSelect: (dialog) => {
         moveChild(-1)
         dialog.clear()
